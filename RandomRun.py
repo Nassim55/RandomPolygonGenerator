@@ -2,11 +2,14 @@ import math
 import random
 import matplotlib.pyplot as plt
 
-
+original_longitude = -1.55459
+original_latitude = 55.0198
 numberOfEdges = 20  # Number of edges on polygon
 radius =  1  # Radius (polar co-ordinates)
 deltaTheta = (2 * math.pi) / numberOfEdges  # Change in angle per point (polar co-ordinates)
-perimeter = 2 * math.pi * radius
+routeDistanceMeters = 2000
+routeDistanceRadian = math.radians(2000 / 111300)
+perimeter = 2 * math.pi * radius 
 
 # For each delta theta defining a list of X and Y co-ordinates for the unit circle polygon and
 # generating a random polygon by varying the radius  
@@ -34,7 +37,7 @@ for i in range(numberOfEdges):
 
 
 # Scaling the random polygon to the perimeter of the original unit circle
-scalingFactor = perimeter / perimeterRandomPolygon
+scalingFactor = routeDistanceRadian / perimeterRandomPolygon
 currentTheta = 0
 coordsRandomPolygonScaled = [[1, 0]]
 perimeterScaledRandomPolygon = 0
@@ -49,9 +52,9 @@ for i in range(numberOfEdges):
 
 print(scalingFactor)
 
-if perimeterScaledRandomPolygon > perimeter:
+if perimeterScaledRandomPolygon > routeDistanceRadian:
     while perimeterScaledRandomPolygon > perimeter:
-        scalingFactor = scalingFactor - (scalingFactor * (0.00001))
+        scalingFactor = scalingFactor - (scalingFactor * (0.3))
         currentTheta = 0
         coordsRandomPolygonScaled = [[1, 0]]
         iteratePerimeterScaledRandomPolygon = 0
@@ -64,10 +67,9 @@ if perimeterScaledRandomPolygon > perimeter:
 
             iteratePerimeterScaledRandomPolygon += math.sqrt((coordsRandomPolygonScaled[i][0]-coordsRandomPolygonScaled[i-1][0])**2 + (coordsRandomPolygonScaled[i][1]-coordsRandomPolygonScaled[i-1][1])**2)
         perimeterScaledRandomPolygon = iteratePerimeterScaledRandomPolygon
-
-if perimeterScaledRandomPolygon < perimeter:
-    while perimeterScaledRandomPolygon > perimeter:
-        scalingFactor = scalingFactor + (scalingFactor * (0.00001))
+else:
+    while perimeterScaledRandomPolygon > routeDistanceRadian:
+        scalingFactor = scalingFactor + (scalingFactor * (0.3))
         currentTheta = 0
         coordsRandomPolygonScaled = [[1, 0]]
         iteratePerimeterScaledRandomPolygon = 0
@@ -80,24 +82,23 @@ if perimeterScaledRandomPolygon < perimeter:
 
             iteratePerimeterScaledRandomPolygon += math.sqrt((coordsRandomPolygonScaled[i][0]-coordsRandomPolygonScaled[i-1][0])**2 + (coordsRandomPolygonScaled[i][1]-coordsRandomPolygonScaled[i-1][1])**2)
         perimeterScaledRandomPolygon = iteratePerimeterScaledRandomPolygon
-
 
 
 
 print('Perimeter: ' + str(perimeter))
 print('Scaled Random Polygon Perimeter: ' + str(perimeterScaledRandomPolygon))
 
-X_coordsPolygon = [i[0] for i in coordsPolygon]
-Y_coordsPolygon = [i[1] for i in coordsPolygon]
-X_coordsRandomPolygon = [i[0] for i in coordsRandomPolygon]
-Y_coordsRandomPolygon = [i[1] for i in coordsRandomPolygon]
-X_coordsRandomPolygonScaled = [i[0] for i in coordsRandomPolygonScaled]
-Y_coordsRandomPolygonScaled = [i[1] for i in coordsRandomPolygonScaled]
+X_coordsPolygon = [(i[0] + original_longitude) for i in coordsPolygon]
+Y_coordsPolygon = [(i[1] + original_latitude) for i in coordsPolygon]
+X_coordsRandomPolygon = [(i[0] + original_longitude) for i in coordsRandomPolygon]
+Y_coordsRandomPolygon = [(i[1] + original_latitude) for i in coordsRandomPolygon]
+X_coordsRandomPolygonScaled = [(i[0] + original_longitude) for i in coordsRandomPolygonScaled]
+Y_coordsRandomPolygonScaled = [(i[1] + original_latitude) for i in coordsRandomPolygonScaled]
 
-plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='y')
-plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
-plt.plot(X_coordsRandomPolygon, Y_coordsRandomPolygon, linestyle='--', marker='o', color='b')
-plt.plot(X_coordsRandomPolygon[0], Y_coordsRandomPolygon[0], linestyle='--', marker='o', color='r')
+#plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='y')
+#plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
+#plt.plot(X_coordsRandomPolygon, Y_coordsRandomPolygon, linestyle='--', marker='o', color='b')
+#plt.plot(X_coordsRandomPolygon[0], Y_coordsRandomPolygon[0], linestyle='--', marker='o', color='r')
 plt.plot(X_coordsRandomPolygonScaled, Y_coordsRandomPolygonScaled, linestyle='--', marker='o', color='g')
 plt.plot(X_coordsRandomPolygonScaled[0], Y_coordsRandomPolygonScaled[0],  linestyle='--', marker='o', color='r')
 plt.grid()
