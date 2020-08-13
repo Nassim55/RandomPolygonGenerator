@@ -79,11 +79,14 @@ else:
 longDifference =  coordsPolygon[0][0] - original_longitude
 for i in range(len(coordsPolygon)-1):
     coordsPolygon[i][0] = coordsPolygon[i][0] - longDifference
-print(coordsPolygon)
+
 print(perimeterIncrements)
 
 X_coordsPolygon = [i[0] for i in coordsPolygon]
 Y_coordsPolygon = [i[1] for i in coordsPolygon]
+
+print(X_coordsPolygon)
+print(Y_coordsPolygon)
 
 plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='b')
 plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
