@@ -37,14 +37,14 @@ for i in range(numberOfEdges):
 
 
 # Scaling the random polygon to the perimeter of the original unit circle
-scalingFactor = routeDistanceRadian / perimeterRandomPolygon
+scalingFactor = perimeter / perimeterRandomPolygon
 currentTheta = 0
-coordsRandomPolygonScaled = [[1, 0]]
+coordsRandomPolygonScaled = [[(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)]]
 perimeterScaledRandomPolygon = 0
 for i in range(numberOfEdges):
     currentTheta += deltaTheta
     if (i ==  (numberOfEdges - 1)):
-        coordsRandomPolygonScaled.append([1, 0])
+        coordsRandomPolygonScaled.append([(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)])
     else:
         coordsRandomPolygonScaled.append([(randomRadiusLst[i] * scalingFactor) * math.cos(currentTheta), (randomRadiusLst[i] * scalingFactor) * math.sin(currentTheta)])
 
@@ -56,12 +56,12 @@ if perimeterScaledRandomPolygon > routeDistanceRadian:
     while perimeterScaledRandomPolygon > perimeter:
         scalingFactor = scalingFactor - (scalingFactor * (0.3))
         currentTheta = 0
-        coordsRandomPolygonScaled = [[1, 0]]
+        coordsRandomPolygonScaled = [[(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)]]
         iteratePerimeterScaledRandomPolygon = 0
         for i in range(numberOfEdges):
             currentTheta += deltaTheta
             if (i ==  (numberOfEdges - 1)):
-                coordsRandomPolygonScaled.append([1, 0])
+                coordsRandomPolygonScaled.append([(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)])
             else:
                 coordsRandomPolygonScaled.append([(randomRadiusLst[i] * scalingFactor) * math.cos(currentTheta), (randomRadiusLst[i] * scalingFactor) * math.sin(currentTheta)])
 
@@ -71,12 +71,12 @@ else:
     while perimeterScaledRandomPolygon > routeDistanceRadian:
         scalingFactor = scalingFactor + (scalingFactor * (0.3))
         currentTheta = 0
-        coordsRandomPolygonScaled = [[1, 0]]
+        coordsRandomPolygonScaled = [[(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)]]
         iteratePerimeterScaledRandomPolygon = 0
         for i in range(numberOfEdges):
             currentTheta += deltaTheta
             if (i ==  (numberOfEdges - 1)):
-                coordsRandomPolygonScaled.append([1, 0])
+                coordsRandomPolygonScaled.append([(1 * scalingFactor) * math.cos(currentTheta), (0 * scalingFactor) * math.sin(currentTheta)])
             else:
                 coordsRandomPolygonScaled.append([(randomRadiusLst[i] * scalingFactor) * math.cos(currentTheta), (randomRadiusLst[i] * scalingFactor) * math.sin(currentTheta)])
 
@@ -88,17 +88,24 @@ else:
 print('Perimeter: ' + str(perimeter))
 print('Scaled Random Polygon Perimeter: ' + str(perimeterScaledRandomPolygon))
 
-X_coordsPolygon = [(i[0] + original_longitude) for i in coordsPolygon]
-Y_coordsPolygon = [(i[1] + original_latitude) for i in coordsPolygon]
-X_coordsRandomPolygon = [(i[0] + original_longitude) for i in coordsRandomPolygon]
-Y_coordsRandomPolygon = [(i[1] + original_latitude) for i in coordsRandomPolygon]
-X_coordsRandomPolygonScaled = [(i[0] + original_longitude) for i in coordsRandomPolygonScaled]
-Y_coordsRandomPolygonScaled = [(i[1] + original_latitude) for i in coordsRandomPolygonScaled]
+#X_coordsPolygon = [(i[0] + original_longitude) for i in coordsPolygon]
+#Y_coordsPolygon = [(i[1] + original_latitude) for i in coordsPolygon]
+#X_coordsRandomPolygon = [(i[0] + original_longitude) for i in coordsRandomPolygon]
+#Y_coordsRandomPolygon = [(i[1] + original_latitude) for i in coordsRandomPolygon]
+#X_coordsRandomPolygonScaled = [(i[0] + original_longitude) for i in coordsRandomPolygonScaled]
+#Y_coordsRandomPolygonScaled = [(i[1] + original_latitude) for i in coordsRandomPolygonScaled]
 
-#plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='y')
-#plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
-#plt.plot(X_coordsRandomPolygon, Y_coordsRandomPolygon, linestyle='--', marker='o', color='b')
-#plt.plot(X_coordsRandomPolygon[0], Y_coordsRandomPolygon[0], linestyle='--', marker='o', color='r')
+X_coordsPolygon = [i[0] for i in coordsPolygon]
+Y_coordsPolygon = [i[1] for i in coordsPolygon]
+X_coordsRandomPolygon = [i[0] for i in coordsRandomPolygon]
+Y_coordsRandomPolygon = [i[1] for i in coordsRandomPolygon]
+X_coordsRandomPolygonScaled = [i[0] for i in coordsRandomPolygonScaled]
+Y_coordsRandomPolygonScaled = [i[1] for i in coordsRandomPolygonScaled]
+
+plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='y')
+plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
+plt.plot(X_coordsRandomPolygon, Y_coordsRandomPolygon, linestyle='--', marker='o', color='b')
+plt.plot(X_coordsRandomPolygon[0], Y_coordsRandomPolygon[0], linestyle='--', marker='o', color='r')
 plt.plot(X_coordsRandomPolygonScaled, Y_coordsRandomPolygonScaled, linestyle='--', marker='o', color='g')
 plt.plot(X_coordsRandomPolygonScaled[0], Y_coordsRandomPolygonScaled[0],  linestyle='--', marker='o', color='r')
 plt.grid()
