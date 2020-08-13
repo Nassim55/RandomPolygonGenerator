@@ -74,6 +74,12 @@ else:
             iteratePerimeterIncrements += distanceBetweenCoords
         perimeterIncrements = iteratePerimeterIncrements
 
+
+
+longDifference =  coordsPolygon[0][0] - original_longitude
+for i in range(len(coordsPolygon)-1):
+    coordsPolygon[i][0] = coordsPolygon[i][0] - longDifference
+print(coordsPolygon)
 print(perimeterIncrements)
 
 X_coordsPolygon = [i[0] for i in coordsPolygon]
