@@ -3,18 +3,9 @@ import random
 import matplotlib.pyplot as plt
 from haversineFormula import haversineFormula
 from settings import *
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, session
 
-
-
-# Users location:
-#original_longitude = -1.55459
-#original_latitude = 55.0198
-
-# Route distance, will be input by user:
-#routeDistanceMeters = 2000
-
-@app.route('/test', methods=['GET'])
+@app.route('/route', methods=['GET'])
 def getRandomRoute():
     original_longitude = float(request.args['longitude'])
     original_latitude = float(request.args['latitude'])
@@ -27,7 +18,7 @@ def getRandomRoute():
     earthRadiusMeters = 6371000
     
     # Polygon parameters:
-    numberOfPoints = 10
+    numberOfPoints = 5
     radiusMeters = routeDistanceMeters / (2 * math.pi)
     radiusDegrees = radiusMeters / 111300
     deltaTheta = (2 * math.pi) / (numberOfPoints - 1)
@@ -86,16 +77,69 @@ def getRandomRoute():
     for i in range(len(coordsPolygon)-1):
         coordsPolygon[i][0] = coordsPolygon[i][0] - longDifference
 
+    print(perimeterIncrements)
+
+    # Defining session variables:
+    session['original_longitude'] = original_longitude
+    session['original_latitude'] = original_latitude
+    session['routeDistanceMeters'] = routeDistanceMeters
+    session['perimeter'] = perimeterIncrements
+    session['coordsPolygon'] = coordsPolygon
+    session['randomRadiusLst'] = randomRadiusLst
+
+
+    return jsonify({'coordinates': coordsPolygon})
+
+@app.route('/optimise', methods=['GET'])
+def scaleRoute():
+    scalingRatio = 0.01
+    perimeterIncrements = session.get('perimiter')
+
+    if perimeterIncrements > routeDistanceMeters:
+        while perimeterIncrements > routeDistanceMeters:
+            thetaIncrements = 0
+            iteratePerimeterIncrements = 0
+            for i in range(len(coordsPolygon)):
+                randomRadiusLst[i] = randomRadiusLst[i] * (1 - scalingRatio)
+                coordsPolygon[i][0] = ((randomRadiusLst[i] * math.cos(thetaIncrements)) + original_longitude) / math.cos(math.radians(original_latitude))
+                coordsPolygon[i][1] = (randomRadiusLst[i] * math.sin(thetaIncrements)) + original_latitude
+                thetaIncrements += deltaTheta
+                distanceBetweenCoords = haversineFormula(coordsPolygon[i-1][1], coordsPolygon[i][1], coordsPolygon[i-1][0], coordsPolygon[i][0])
+                iteratePerimeterIncrements += distanceBetweenCoords
+            perimeterIncrements = iteratePerimeterIncrements
+    else:
+        while perimeterIncrements < routeDistanceMeters:
+            thetaIncrements = 0
+            iteratePerimeterIncrements = 0
+            for i in range(len(coordsPolygon)):
+                randomRadiusLst[i] = randomRadiusLst[i] * (1 + scalingRatio)
+                coordsPolygon[i][0] = ((randomRadiusLst[i] * math.cos(thetaIncrements)) + original_longitude) / math.cos(math.radians(original_latitude))
+                coordsPolygon[i][1] = (randomRadiusLst[i] * math.sin(thetaIncrements)) + original_latitude
+                thetaIncrements += deltaTheta
+                distanceBetweenCoords = haversineFormula(coordsPolygon[i-1][1], coordsPolygon[i][1], coordsPolygon[i-1][0], coordsPolygon[i][0])
+                iteratePerimeterIncrements += distanceBetweenCoords
+            perimeterIncrements = iteratePerimeterIncrements
+
+
+app.run(port=5000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     #X_coordsPolygon = [i[0] for i in coordsPolygon]
     #Y_coordsPolygon = [i[1] for i in coordsPolygon]
     #plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='b')
     #plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
     #plt.grid()
     #plt.show()
-
-
-    return jsonify({'coordinates': coordsPolygon})
-
-#getRandomRoute()
-
-app.run(port=5000)
