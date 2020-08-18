@@ -102,7 +102,7 @@ def scaleRoute():
     distanceMeters = 0
     for i in range(len(mapboxRouteCoords)):
         distanceMeters += haversineFormula(mapboxRouteCoords[i-1][1], mapboxRouteCoords[i][1], mapboxRouteCoords[i-1][0], mapboxRouteCoords[i][0])
-    print(distanceMeters)
+    #print(distanceMeters)
 
     # Generating list of distances:
     distanceLst = []
@@ -112,6 +112,36 @@ def scaleRoute():
         else:
             distanceFromOriginMeters = haversineFormula(originCoords[1], mapboxRouteCoords[i][1], originCoords[0], mapboxRouteCoords[i][0])
             distanceLst.append(distanceFromOriginMeters)
+
+    # Generate denser coordinate points:
+    denseCoords = []
+    for i in range(len(mapboxRouteCoords) - 1):
+        numberOfDivisions = 100
+        percentageIncrement = distanceLst[i] / numberOfDivisions
+        diffLongitude = mapboxRouteCoords[i+1][0] - mapboxRouteCoords[i+1][0]
+        diffLatitude = mapboxRouteCoords[i+1][1] - mapboxRouteCoords[i+1][1]
+
+        percentageTravelled = 0
+        while percentageTravelled < 1000:
+            diffLongitude *= percentageTravelled
+            diffLatitude *= percentageTravelled
+            denseCoords.append([(mapboxRouteCoords[i][0] + diffLongitude), (mapboxRouteCoords[i][1] + diffLatitude)])
+
+            percentageTravelled += numberOfDivisions
+
+    mapboxRouteCoords = denseCoords
+
+
+
+    # Generating list of distances:
+    distanceLst = []
+    for i in range(len(mapboxRouteCoords)):
+        if i == 0 or i == len(mapboxRouteCoords) - 1:
+            distanceLst.append(0)
+        else:
+            distanceFromOriginMeters = haversineFormula(originCoords[1], mapboxRouteCoords[i][1], originCoords[0], mapboxRouteCoords[i][0])
+            distanceLst.append(distanceFromOriginMeters)
+
 
     # Optimising route that is greater than the route distance:
     if distanceMeters > routeDistanceMeters:
@@ -126,9 +156,9 @@ def scaleRoute():
             distanceMeters = 0
             for i in range(len(mapboxRouteCoords)):
                 distanceMeters += haversineFormula(mapboxRouteCoords[i-1][1], mapboxRouteCoords[i][1], mapboxRouteCoords[i-1][0], mapboxRouteCoords[i][0])
-            print(distanceMeters)
+            #print(distanceMeters)
 
-    print(mapboxRouteCoords)
+    #print(mapboxRouteCoords)
     
     optimisedRouteLineString = { 'distanceMeters': distanceMeters, 'coordinates': mapboxRouteCoords }
         
