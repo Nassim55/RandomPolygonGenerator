@@ -20,7 +20,7 @@ def getRandomRoute():
     
     # Polygon parameters:
     numberOfPoints = 5
-    routeDistanceCorectionFactor = 0.5
+    routeDistanceCorrectionFactor = 0.65
     radiusMeters = routeDistanceMeters / (2 * math.pi)
     radiusDegrees = radiusMeters / 111300
     deltaTheta = (2 * math.pi) / (numberOfPoints - 1)
@@ -50,8 +50,8 @@ def getRandomRoute():
             perimeterIncrements += distanceBetweenCoords
 
     scalingRatio = 0.01
-    if perimeterIncrements > routeDistanceMeters:
-        while perimeterIncrements > routeDistanceMeters:
+    if perimeterIncrements > (routeDistanceMeters * routeDistanceCorrectionFactor):
+        while perimeterIncrements > (routeDistanceMeters * routeDistanceCorrectionFactor):
             thetaIncrements = 0
             iteratePerimeterIncrements = 0
             for i in range(len(coordsPolygon)):
@@ -63,7 +63,7 @@ def getRandomRoute():
                 iteratePerimeterIncrements += distanceBetweenCoords
             perimeterIncrements = iteratePerimeterIncrements
     else:
-        while perimeterIncrements < routeDistanceMeters:
+        while perimeterIncrements < (routeDistanceMeters * routeDistanceCorrectionFactor):
             thetaIncrements = 0
             iteratePerimeterIncrements = 0
             for i in range(len(coordsPolygon)):
@@ -102,10 +102,9 @@ def scaleRoute():
     # Find distance of route:
     originCoords = mapboxRouteCoords[0]
     distanceMeters = 0
-    for i in range(len(mapboxRouteCoords)):
+    for i in range(1, len(mapboxRouteCoords)):
         distanceMeters += haversineFormula(mapboxRouteCoords[i-1][1], mapboxRouteCoords[i][1], mapboxRouteCoords[i-1][0], mapboxRouteCoords[i][0])
 
-    print(distanceMeters)
     # Transfer route coords into dictionary:
     coordsDict = {}
     for i in range(len(mapboxRouteCoords)):
@@ -130,7 +129,7 @@ def scaleRoute():
 
         optimisingIndex = indexCoordMaxFromOrigin + 1
         # Optimise route:
-        while distanceMeters > routeDistanceMeters:
+        while (distanceMeters > routeDistanceMeters) and (optimisingIndex in coordsDict):
             coordsDict.pop(optimisingIndex)
             optimisingIndex += 1
         
@@ -144,11 +143,13 @@ def scaleRoute():
                     distanceMeters += haversineFormula(coordsDict[key][1], coordsDict[nextIndex][1], coordsDict[key][0], coordsDict[nextIndex][0])
 
         if coordsDict[max(coordsDict, key=int)] != coordsDict[0]:
+            secondLastToLast = True
             coordRecalculatePointOne = coordsDict[max(coordsDict, key=int)]
             coordRecalculatePointTwo = coordsDict[0]
             coordsDict[max(coordsDict, key=int) + 1] = coordsDict[0]
         else:
-             for key in sorted(coordsDict.keys()):
+            secondLastToLast = False
+            for key in sorted(coordsDict.keys()):
                 currentIndex = key
                 nextIndex = key + 1
                 while (nextIndex not in coordsDict) and (nextIndex < max(coordsDict, key=int)):
@@ -161,15 +162,14 @@ def scaleRoute():
     coordRecalculatePointTwoLst = list(coordRecalculatePointTwo)
     coordRecalculatePointOneString = str(coordRecalculatePointOneLst[0]) + ',' + str(coordRecalculatePointOneLst[1])
     coordRecalculatePointTwoString = str(coordRecalculatePointTwoLst[0]) + ',' + str(coordRecalculatePointTwoLst[1])
-
-    print(coordRecalculatePointOneLst)
-    print(coordRecalculatePointTwoLst)
-    print(coordRecalculatePointOneString)
-    print(coordRecalculatePointTwoString)
     
     recalculateRouteString = coordRecalculatePointOneString + ';' + coordRecalculatePointTwoString
-    print(recalculateRouteString)
     
+    
+    session['secondLastToLast'] = secondLastToLast
+    session['coordsDict'] = coordsDict
+    
+
     optimisedRouteLineString = { 
         'distanceMeters': distanceMeters,
         'coordinates': mapboxRouteCoords,
@@ -179,20 +179,52 @@ def scaleRoute():
     return jsonify(optimisedRouteLineString)
 
     
+@app.route('/finilise', methods=['POST'])
+def finiliseRoute():
+    postRequest = request.get_json()
+    missingRouteCoordinates = postRequest['finilisedGapCoordinates']
+    
+    secondLastToLast = session['secondLastToLast']
+    coordsDict = session['coordsDict']
+    coordsDict = {int(key):value for key, value in coordsDict.items()}
+
+    listOriginalCoords = []
+    for key in sorted(coordsDict.keys()):
+        listOriginalCoords.append(list(coordsDict[key]))
 
 
-            
+    missingCoordsDict = {}
+    for i in range(len(missingRouteCoordinates)):
+        missingCoordsDict[i] = tuple(missingRouteCoordinates[i])
 
+    for key in sorted(coordsDict.keys()):
+        nextIndex = key + 1
+        if nextIndex not in coordsDict:
+            indexToCombine = key
+            break
+    
+    if secondLastToLast:
+        listOriginalCoords.pop()
+        listOriginalCoords.pop()
+        listCoords = []
+        for i in listOriginalCoords:
+            listCoords.append(i)
+        for i in missingRouteCoordinates:
+            listCoords.append(i)
+        distanceMeters = 0
+        for i in range(1, len(listCoords)):
+            distanceMeters += haversineFormula(listCoords[i-1][1], listCoords[i][1], listCoords[i-1][0], listCoords[i][0])
+    else:
+        firstHalfListOriginalCoords = listOriginalCoords[:(indexToCombine)]
+        secondHalfListOriginalCoords = listOriginalCoords[(indexToCombine+2):]
+        listCoords = firstHalfListOriginalCoords + missingRouteCoordinates + secondHalfListOriginalCoords
+        distanceMeters = 0
+        for i in range(1, len(listCoords)):
+            distanceMeters += haversineFormula(listCoords[i-1][1], listCoords[i][1], listCoords[i-1][0], listCoords[i][0])
+
+    return jsonify({'distanceMeters': distanceMeters, 'coordinates': listCoords})
 
     
-
-
-
-    
-    returnLst = []
-    return jsonify({'optimisedCoordinates': returnLst})
-
-    ##actualRouteDistanceMeters = 
 
 
 
