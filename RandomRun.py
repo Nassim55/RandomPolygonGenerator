@@ -79,8 +79,6 @@ def getRandomRoute():
     for i in range(len(coordsPolygon)-1):
         coordsPolygon[i][0] = coordsPolygon[i][0] - longDifference
 
-    #print(perimeterIncrements)
-
     # Defining session variables:
     session['original_longitude'] = original_longitude
     session['original_latitude'] = original_latitude
@@ -90,7 +88,22 @@ def getRandomRoute():
     session['randomRadiusLst'] = randomRadiusLst
 
 
+    
+
+    X_coordsPolygon = [i[0] for i in coordsPolygon]
+    Y_coordsPolygon = [i[1] for i in coordsPolygon]
+    plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='b')
+    plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
+    plt.grid()
+    plt.show()
+
+
     return jsonify({'coordinates': coordsPolygon})
+
+getRandomRoute()
+
+
+
 
 @app.route('/optimise', methods=['POST'])
 def scaleRoute():
@@ -222,14 +235,59 @@ def finiliseRoute():
         for i in range(1, len(listCoords)):
             distanceMeters += haversineFormula(listCoords[i-1][1], listCoords[i][1], listCoords[i-1][0], listCoords[i][0])
 
-    return jsonify({'distanceMeters': distanceMeters, 'coordinates': listCoords})
+    # For map bounds:
+    print(listCoords)
+    print(len(listCoords))
+    listFinalisedLongitudes = []
+    listFinalisedLatitudes = []
+    for i in listCoords:
+        listFinalisedLongitudes.append(i[0])
+        listFinalisedLatitudes.append(i[1])
 
+    mostEasternLongitude = max(listFinalisedLongitudes)
+    mostWesternLongitude = min(listFinalisedLongitudes)
+    mostNorthernLatitude = max(listFinalisedLatitudes)
+    mostSouthernLatitude = min(listFinalisedLatitudes)
+
+    mostNorthEastCoordinates = [mostEasternLongitude, mostNorthernLatitude]
+    mostSouthWestCoordinates = [mostWesternLongitude, mostSouthernLatitude]
+
+    return jsonify({
+        'distanceMeters': distanceMeters,
+        'coordinates': listCoords,
+        'mostNorthEastCoordinates': mostNorthEastCoordinates,
+        'mostSouthWestCoordinates': mostSouthWestCoordinates
+        })
+
+@app.route('/routebounds', methods=['POST'])
+def routeBounds():
+    postRequest = request.get_json()
+    listCoords = postRequest['mapboxRouteCoords']
+
+    listFinalisedLongitudes = []
+    listFinalisedLatitudes = []
+    for i in listCoords:
+        listFinalisedLongitudes.append(i[0])
+        listFinalisedLatitudes.append(i[1])
+
+    mostEasternLongitude = max(listFinalisedLongitudes)
+    mostWesternLongitude = min(listFinalisedLongitudes)
+    mostNorthernLatitude = max(listFinalisedLatitudes)
+    mostSouthernLatitude = min(listFinalisedLatitudes)
+
+    mostNorthEastCoordinates = [mostEasternLongitude, mostNorthernLatitude]
+    mostSouthWestCoordinates = [mostWesternLongitude, mostSouthernLatitude]
     
 
+    return jsonify({
+        'mostNorthEastCoordinates': mostNorthEastCoordinates,
+        'mostSouthWestCoordinates': mostSouthWestCoordinates
+        })
 
 
 
-app.run(port=5000)
+
+#app.run(port=5000)
 
 
 
