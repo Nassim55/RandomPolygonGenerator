@@ -11,9 +11,6 @@ def getRandomRoute():
     original_longitude = float(request.args['longitude'])
     original_latitude = float(request.args['latitude'])
     routeDistanceMeters = float(request.args['routeDistance'])
-    #print(original_longitude)
-    #print(original_latitude)
-    #print(routeDistanceMeters)
 
     # For use in haversine formula:
     earthRadiusMeters = 6371000
@@ -79,7 +76,22 @@ def getRandomRoute():
     for i in range(len(coordsPolygon)-1):
         coordsPolygon[i][0] = coordsPolygon[i][0] - longDifference
 
-    # Defining session variables:
+    # Applying a random rotation to the random polygon so that all routes aren't in the same direction:
+    randomRotationAngle = random.uniform(0, (2 * math.pi))
+    for i in range(len(coordsPolygon)):
+        # Bringing user location to origin of zero:
+        coordsPolygon[i][0] -= original_longitude
+        coordsPolygon[i][1] -= original_latitude
+        # Applying rotation by the randomised angle:
+        xRotation = (coordsPolygon[i][0] * (math.cos(randomRotationAngle))) - (coordsPolygon[i][1] * (math.sin(randomRotationAngle)))
+        yRotation = (coordsPolygon[i][0] * (math.sin(randomRotationAngle))) + (coordsPolygon[i][1] * (math.cos(randomRotationAngle)))
+        coordsPolygon[i][0] = xRotation
+        coordsPolygon[i][1] = yRotation
+        # Bringing origin back to user location:
+        coordsPolygon[i][0] += original_longitude
+        coordsPolygon[i][1] += original_latitude
+
+    #Defining session variables:
     session['original_longitude'] = original_longitude
     session['original_latitude'] = original_latitude
     session['routeDistanceMeters'] = routeDistanceMeters
@@ -87,23 +99,8 @@ def getRandomRoute():
     session['coordsPolygon'] = coordsPolygon
     session['randomRadiusLst'] = randomRadiusLst
 
-
-    
-
-    X_coordsPolygon = [i[0] for i in coordsPolygon]
-    Y_coordsPolygon = [i[1] for i in coordsPolygon]
-    plt.plot(X_coordsPolygon, Y_coordsPolygon, linestyle='--', marker='o', color='b')
-    plt.plot(X_coordsPolygon[0], Y_coordsPolygon[0], linestyle='--', marker='o', color='r')
-    plt.grid()
-    plt.show()
-
-
     return jsonify({'coordinates': coordsPolygon})
-
-getRandomRoute()
-
-
-
+    
 
 @app.route('/optimise', methods=['POST'])
 def scaleRoute():
@@ -287,7 +284,7 @@ def routeBounds():
 
 
 
-#app.run(port=5000)
+app.run(port=5000)
 
 
 
