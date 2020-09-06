@@ -5,12 +5,18 @@ import matplotlib.pyplot as plt
 from haversineFormula import haversineFormula
 from settings import *
 from flask import Flask, jsonify, request, Response, session
+import requests
+
+from routeBounds import routeBounds
 
 @app.route('/route', methods=['GET'])
 def getRandomRoute():
     original_longitude = float(request.args['longitude'])
     original_latitude = float(request.args['latitude'])
     routeDistanceMeters = float(request.args['routeDistance'])
+
+    # API key:
+    MAPBOX_API_KEY = 'pk.eyJ1IjoibmFzc2ltY2hlbm91ZiIsImEiOiJja2R1NjE2amMzYnl4MzByb3c5YmxlMGY5In0.cBj3YeAh0UMxinxOfhDLIw'
 
     # For use in haversine formula:
     earthRadiusMeters = 6371000
@@ -99,13 +105,56 @@ def getRandomRoute():
     session['coordsPolygon'] = coordsPolygon
     session['randomRadiusLst'] = randomRadiusLst
 
-    return jsonify({'coordinates': coordsPolygon})
+
+
+
+    # Formats coords for get request:
+    for i in range(len(coordsPolygon)):
+        for j in range(len(coordsPolygon[i])):
+            coordsPolygon[i][j] = str(coordsPolygon[i][j])
+    for i in range(len(coordsPolygon)):
+        coordsPolygon[i] = ','.join(coordsPolygon[i])
+    coordsPolygon = ';'.join(coordsPolygon)
+
+    response = requests.get(f'https://api.mapbox.com/directions/v5/mapbox/walking/{coordsPolygon}?alternatives=false&geometries=geojson&steps=true&continue_straight=false&access_token={MAPBOX_API_KEY}')
+    data = response.json()
+
+    originalMapboxRouteDistanceMeters = data['routes'][0]['distance']
+    originalMapboxRouteCoordinates = data['routes'][0]['geometry']['coordinates']
+
+
+    if originalMapboxRouteDistanceMeters > routeDistanceMeters:
+        optimisedData = scaleRoute(originalMapboxRouteCoordinates)
+        recalculatePoints = optimisedData['recalculatePoints']
+        response = requests.get(f'https://api.mapbox.com/directions/v5/mapbox/walking/{recalculatePoints}?alternatives=false&geometries=geojson&steps=true&continue_straight=false&access_token={MAPBOX_API_KEY}')
+        data = response.json()
+        optimisedMapboxCoordinates = data['routes'][0]['geometry']['coordinates']
+        finiliseRouteData = finiliseRoute(optimisedMapboxCoordinates)
+        viewBounds = routeBounds(finiliseRouteData['coordinates'])
+        
+        print(finiliseRouteData['distanceMeters'])
+        print(finiliseRouteData['coordinates'])
+
+        return jsonify({
+            'distanceMeters': xx['distanceMeters'],
+            'coordinates': xx['coordinates'],
+            'mostNorthEastCoordinates': viewBounds['mostNorthEastCoordinates'],
+            'mostSouthWestCoordinates': viewBounds['mostSouthWestCoordinates']
+            })
+    
+    else:
+        viewBounds = routeBounds(originalMapboxRouteCoordinates)
+        return jsonify({
+            'distanceMeters': originalMapboxRouteDistanceMeters,
+            'coordinates': originalMapboxRouteCoordinates,
+            'mostNorthEastCoordinates': viewBounds['mostNorthEastCoordinates'],
+            'mostSouthWestCoordinates': viewBounds['mostSouthWestCoordinates']
+            })
     
 
-@app.route('/optimise', methods=['POST'])
-def scaleRoute():
-    postRequest = request.get_json()
-    mapboxRouteCoords = postRequest['mapboxRouteGeometry']
+
+def scaleRoute(originalMapboxRouteCoordinates):
+    mapboxRouteCoords = originalMapboxRouteCoordinates
     routeDistanceMeters = session['routeDistanceMeters']
 
 
@@ -186,13 +235,12 @@ def scaleRoute():
         'recalculatePoints':  recalculateRouteString
     }
         
-    return jsonify(optimisedRouteLineString)
+    return optimisedRouteLineString
 
     
-@app.route('/finilise', methods=['POST'])
-def finiliseRoute():
-    postRequest = request.get_json()
-    missingRouteCoordinates = postRequest['finilisedGapCoordinates']
+def finiliseRoute(optimisedMapboxCoordinates):
+    
+    missingRouteCoordinates = optimisedMapboxCoordinates
     
     secondLastToLast = session['secondLastToLast']
     coordsDict = session['coordsDict']
@@ -232,54 +280,11 @@ def finiliseRoute():
         for i in range(1, len(listCoords)):
             distanceMeters += haversineFormula(listCoords[i-1][1], listCoords[i][1], listCoords[i-1][0], listCoords[i][0])
 
-    # For map bounds:
-    print(listCoords)
-    print(len(listCoords))
-    listFinalisedLongitudes = []
-    listFinalisedLatitudes = []
-    for i in listCoords:
-        listFinalisedLongitudes.append(i[0])
-        listFinalisedLatitudes.append(i[1])
-
-    mostEasternLongitude = max(listFinalisedLongitudes)
-    mostWesternLongitude = min(listFinalisedLongitudes)
-    mostNorthernLatitude = max(listFinalisedLatitudes)
-    mostSouthernLatitude = min(listFinalisedLatitudes)
-
-    mostNorthEastCoordinates = [mostEasternLongitude, mostNorthernLatitude]
-    mostSouthWestCoordinates = [mostWesternLongitude, mostSouthernLatitude]
-
-    return jsonify({
-        'distanceMeters': distanceMeters,
-        'coordinates': listCoords,
-        'mostNorthEastCoordinates': mostNorthEastCoordinates,
-        'mostSouthWestCoordinates': mostSouthWestCoordinates
-        })
-
-@app.route('/routebounds', methods=['POST'])
-def routeBounds():
-    postRequest = request.get_json()
-    listCoords = postRequest['mapboxRouteCoords']
-
-    listFinalisedLongitudes = []
-    listFinalisedLatitudes = []
-    for i in listCoords:
-        listFinalisedLongitudes.append(i[0])
-        listFinalisedLatitudes.append(i[1])
-
-    mostEasternLongitude = max(listFinalisedLongitudes)
-    mostWesternLongitude = min(listFinalisedLongitudes)
-    mostNorthernLatitude = max(listFinalisedLatitudes)
-    mostSouthernLatitude = min(listFinalisedLatitudes)
-
-    mostNorthEastCoordinates = [mostEasternLongitude, mostNorthernLatitude]
-    mostSouthWestCoordinates = [mostWesternLongitude, mostSouthernLatitude]
     
+    return { 'distanceMeters': distanceMeters, 'coordinates': listCoords }
 
-    return jsonify({
-        'mostNorthEastCoordinates': mostNorthEastCoordinates,
-        'mostSouthWestCoordinates': mostSouthWestCoordinates
-        })
+
+
 
 
 
